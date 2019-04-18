@@ -281,7 +281,7 @@ var enemyFollowPlayer = function(i){
 
     if(Enemies[i].x + Enemies[i].w < Player.x && collisionDetect(Player, tempObj) == false){
        Enemies[i].xDir = 1;
-    } else if(Enemies.x > Player.x + Player.w &&){
+    } else if(Enemies.x > Player.x + Player.w){
 	   Enemies[i].xDir = -1;
 	}
 }
