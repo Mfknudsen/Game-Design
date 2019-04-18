@@ -76,6 +76,10 @@ function ai(x1, x2, y, w, h, fallOff, canJump){
 
 	this.readyToJump = 0;
 
+	this.updateDist = 1;
+
+	this.hp = 2;
+
     //Creating a local function called "draw" and will contain the visual code.
     this.draw = function(){
         

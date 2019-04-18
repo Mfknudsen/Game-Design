@@ -2,12 +2,15 @@
 window.addEventListener("keydown", checkKeyDown, false);
 window.addEventListener("keyup", checkKeyUp, false);
 
+// ---- OVERALL VARIABLES ---- \\
 //Display will hold the objects of the map.
 var Display;
 
+// ---- PLAYER VARIABLES ---- \\
 //Player will hold the code of which the player will directly interact with.
 var Player;
 
+// ---- Enemy VARIABLES ---- \\
 //Enemies will hold the objects of the ais.
 var Enemies = []
 
@@ -19,6 +22,11 @@ var wh = 2;
 var timerEnd = 5;
 
 var LastX;
+
+// ---- AI DIRECTOR VARIABLES---- \\
+var frameCount = 0;
+
+var updateDist;
 
 //Creating the "setup" function that is used at the start of the script.
 function setup(){
@@ -38,11 +46,34 @@ function setup(){
 function draw(){
     //Setting the color of the background.
     background(0,0,50);
-    
-    //Calling the function that need to update every frame.
-    Display.draw();
-    enemyUpdate();
+	
+	updateMap();
+
+    updateAIDIRECTOR();
+
     playerUpdate();
+
+	for (var i = 0; i < Enemies.length; i++){
+	   if(Enemies[i].updateDist == 2 && frameCount % 5 == 0){
+		  
+		  enemyUpdate(i);
+	   
+	   } else if(Enemies[i].updateDist == 1){
+	      
+		  enemyUpdate(i);
+	   
+	   }
+	}
+	
+	updateAIDIRECTOR();
+}
+
+function updateMap(){
+    Display.draw();
+}
+
+function updateAIDIRECTOR(){
+    updateFrameCount();
 }
 
 //Creating a function called "playerUpdate" that will contain all the function and some single code that make the "Player" work. 
@@ -62,11 +93,11 @@ function playerUpdate(){
 }
 
 //Creating a function called "enemyUpdate" that will contain all the function and some single code that make the "Enemies" work. 
-function enemyUpdate(){
-    if(Player.endHP != 0){
-    //Making a for each statement that will run the code for all of the "Enemies".
-    for(var i = 0 ; i < Enemies.length; i++){
-        
+function enemyUpdate(i){
+    
+	Enemies[i].draw();
+
+	if(Enemies[i].hp != 0){        
         enemyChangeState(i);
         enemyState(i);
         
@@ -76,10 +107,7 @@ function enemyUpdate(){
             
             damagePlayer(i);
             seePlayer(i);
-        
-                        
-            Enemies[i].draw();
-        
+                
             //Checking if the "Player" is within range and if it is, then it will follow else it will patrol.
             if(Enemies[i].isInRange == false){
                 //enemyPatrol(i);
@@ -97,12 +125,11 @@ function enemyUpdate(){
                 //enemyFollowPlayer(i);
             }
         }
-    }
     } else{
         for(var e = 0 ; e < Enemies.length; e++){
         RestartEnemies(e);
-        }
-    }
+		}
+	}
 }
 
 //Calling two function using the eventlistiner in the start of the script, to get the keyboard input.
@@ -123,8 +150,8 @@ function checkKeyUp(key){
 function spawnEnemies(){
     //The "ai" objects will be giving values of x1, x2, y, w, h, fallOff and canJump.
     Enemies.push(new ai(50, 750, 150, 35, 45, false, true));
-    //Enemies.push(new ai(450, 700, 150, 35, 45, false, true));
-    //Enemies.push(new ai(200, 465, 150, 35, 45, false, true));
+    Enemies.push(new ai(450, 700, 150, 35, 45, false, true));
+    Enemies.push(new ai(200, 465, 150, 35, 45, false, true));
 }
 
 var enemyState = function(i){
@@ -228,28 +255,20 @@ var enemyPatrol = function(i){
     if(Enemies[i].x == Enemies[i].x1 && Enemies[i].xDir == 0){
        Enemies[i].right = 1;
        Enemies[i].left = 0;
-       Enemies[i].delayed = false;
-       
+       Enemies[i].delayed = false;       
     } else if(Enemies[i].dontMoveleft){
-       console.log("check");
        Enemies[i].right = 1;
        Enemies[i].left = 0;
        Enemies[i].delayed = false;
-    
     } else if(Enemies[i].dontMoveright){
-        
        Enemies[i].right = 0;
        Enemies[i].left = 1;
        Enemies[i].delayed = false;
-        
     } else if(Enemies[i].x <= Enemies[i].x1 && Enemies[i].xDir == -1){
-        
        Enemies[i].right = 1;
        Enemies[i].left = 0;
        Enemies[i].delayed = false;
-    
     } else if(Enemies[i].x + Enemies[i].w >= Enemies[i].x2 && Enemies[i].xDir == 1){
-               
        Enemies[i].right = 0;
        Enemies[i].left = 1;
        Enemies[i].delayed = false;
@@ -257,9 +276,14 @@ var enemyPatrol = function(i){
 }
 
 var enemyFollowPlayer = function(i){
-    if(Enemies[i]){
-       
-       }
+
+    var tempObj = {x: 1,y: 1,w: 1,h: 1};
+
+    if(Enemies[i].x + Enemies[i].w < Player.x && collisionDetect(Player, tempObj) == false){
+       Enemies[i].xDir = 1;
+    } else if(Enemies.x > Player.x + Player.w &&){
+	   Enemies[i].xDir = -1;
+	}
 }
 
 var enemyReadyingToJump = function(i){
@@ -493,7 +517,7 @@ var movePlayer = function(){
     } else if (Player.jumpSpeed <= 0){
         playerFall();  
     } 
-};
+}
 
 //Creating a variable "playerJump" as a function to mimic an upwards force that will slowly reduce due to artificial gravity.
 var playerJump = function(){
@@ -579,4 +603,8 @@ var RestartPlayer = function(){
     Player.y = Player.RestartY;
     
     Player.Damage = 0;
+}
+
+var updateFrameCount = function(){
+	frameCount += 1;
 }
