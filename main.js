@@ -6,6 +6,8 @@ window.addEventListener("keyup", checkKeyUp, false);
 //Display will hold the objects of the map.
 var Display;
 
+var Projectiles = []
+
 // ---- PLAYER VARIABLES ---- \\
 //Player will hold the code of which the player will directly interact with.
 var Player;
@@ -26,8 +28,6 @@ var LastX;
 // ---- AI DIRECTOR VARIABLES---- \\
 var frameCount = 0;
 
-var updateDist;
-
 //Creating the "setup" function that is used at the start of the script.
 function setup(){
     //Setting the canvas.
@@ -35,37 +35,30 @@ function setup(){
 
     //Settubg up the "Player" and "Display" as objects. "Player" will also be giving some values of x, y, w and h.
     Display = new display();
-    Player = new controller(-15, 100, 35, 45);
+    Player = new controller(250, 100, 35, 45);
     
     //Calling the functions that are needed to run ones at the start of the game.
     Display.Start();
     spawnEnemies();
+	Projectiles.push(new enemyShot(-50, -50, 0, 0, 1,0,0,0));
 }
 
 //Creating the "draw" function that will be called every frame.
 function draw(){
     //Setting the color of the background.
-    background(0,0,50);
-	
+    background(50);
+
 	updateMap();
 
     updateAIDIRECTOR();
 
-    playerUpdate();
-
 	for (var i = 0; i < Enemies.length; i++){
-	   if(Enemies[i].updateDist == 2 && frameCount % 5 == 0){
-		  
 		  enemyUpdate(i);
-	   
-	   } else if(Enemies[i].updateDist == 1){
-	      
-		  enemyUpdate(i);
-	   
-	   }
 	}
+
+	playerUpdate();
 	
-	updateAIDIRECTOR();
+	miscellaneousUpdate();
 }
 
 function updateMap(){
@@ -73,7 +66,7 @@ function updateMap(){
 }
 
 function updateAIDIRECTOR(){
-    updateFrameCount();
+	frameCount += 1;
 }
 
 //Creating a function called "playerUpdate" that will contain all the function and some single code that make the "Player" work. 
@@ -90,14 +83,17 @@ function playerUpdate(){
     
     //Calling the function "movePlayer".
     movePlayer();
+
+	playerAttack();
 }
 
 //Creating a function called "enemyUpdate" that will contain all the function and some single code that make the "Enemies" work. 
 function enemyUpdate(i){
-    
-	Enemies[i].draw();
+	if(Enemies[i].hp > 0){
+        Enemies[i].draw();
+	    
+		enemyCheckRange(i);
 
-	if(Enemies[i].hp != 0){        
         enemyChangeState(i);
         enemyState(i);
         
@@ -105,31 +101,28 @@ function enemyUpdate(i){
         
             enemyDelay(i);
             
-            damagePlayer(i);
             seePlayer(i);
-                
-            //Checking if the "Player" is within range and if it is, then it will follow else it will patrol.
-            if(Enemies[i].isInRange == false){
-                //enemyPatrol(i);
-                Enemies[i].Timer = 0;
-            } else{
-                if(Enemies[i].Timer == timerEnd){
-                    Enemies[i].xTarget = Player.x;
-                    Enemies[i].Timer = 0;
-                }
-            
-                if(Enemies[i].Timer < timerEnd){
-                    Enemies[i].Timer++
-                }
-                Enemies[i].wTarget = Player.w;
-                //enemyFollowPlayer(i);
-            }
         }
-    } else{
-        for(var e = 0 ; e < Enemies.length; e++){
-        RestartEnemies(e);
-		}
+    } else if(Enemies[i].hp <= 0){
+	    Enemies.splice(i,1);
 	}
+
+	if(Player.endHP == 0){
+        RestartEnemies(i);
+	}
+}
+
+function miscellaneousUpdate(){
+   for (var i = 0; i < Projectiles.length; i++){
+      moveProjektiles(i);
+      damagePlayer(i);
+   }
+
+   for (var i = 0; i < Projectiles.length; i++){
+      if(Projectiles[i].done){
+		 Projectiles.splice(i, 1);
+	  }
+   }
 }
 
 //Calling two function using the eventlistiner in the start of the script, to get the keyboard input.
@@ -149,15 +142,12 @@ function checkKeyUp(key){
 //Creating a function called "spawnEnemies" that will contain all of the push functions used to create more of the "ai" objects.
 function spawnEnemies(){
     //The "ai" objects will be giving values of x1, x2, y, w, h, fallOff and canJump.
-    Enemies.push(new ai(50, 750, 150, 35, 45, false, true));
-    Enemies.push(new ai(450, 700, 150, 35, 45, false, true));
-    Enemies.push(new ai(200, 465, 150, 35, 45, false, true));
+    Enemies.push(new ai(100, 500, 150, 35, 45, false, true, false));
+    Enemies.push(new ai(450, 700, 150, 35, 45, false, true, false));
+    Enemies.push(new ai(150, 465, 150, 35, 45, false, true, false));
 }
 
 var enemyState = function(i){
- 
-    console.log();
-    
     if(Enemies[i].currentState == "Patroling"){
        
 	   enemyReadyingToJump(i);
@@ -171,61 +161,119 @@ var enemyState = function(i){
            if(Enemies[i].delayed){
                enemyMove(i);
            }
-           
            if(Enemies[i].canJump == true && Enemies[i].jumpSpeed <= 0 && Enemies[i].readyToJump == 2){
 
                enemyJumpLeft(i);
                enemyJumpRight(i);
-         
            }
-           
            if(Enemies[i].fallOff == false){
                
                enemyDontFallLeft(i);
                enemyDontFallRight(i);
-           
            }
-           
        enemyDontMoveLeft(i);
        enemyDontMoveRight(i);
-       
        }
        if(Enemies[i].jumpSpeed <= 0){
            
            enemyFall(i);
-       
        } else if(Enemies[i].jumpSpeed > 0){
            
            enemyJump(i);
-       
        }
-        
+
     } else if(Enemies[i].currentState == "Following"){
        
-       enemyFollowPlayer(i);
-    
-    }    
+	   enemyReadyingToJump(i);
+	   
+	   if(enemyCheckGround(i) == false){
+           
+     	   enemyFollowPlayer(i);
+           
+           enemyDelay(i);
+           
+           if(Enemies[i].delayed){
+               enemyMove(i);
+           }
+           if(Enemies[i].canJump == true && Enemies[i].jumpSpeed <= 0 && Enemies[i].readyToJump == 2){
+               enemyJumpLeft(i);
+               enemyJumpRight(i);
+           }
+           if(Enemies[i].fallOff == false){
+               enemyDontFallLeft(i);
+               enemyDontFallRight(i);
+           }
+       enemyDontMoveLeft(i);
+       enemyDontMoveRight(i);
+       }
+       if(Enemies[i].jumpSpeed <= 0){
+           enemyFall(i);
+       } else if(Enemies[i].jumpSpeed > 0){
+           enemyJump(i);
+       }
+
+    } else if(Enemies[i].currentState == "Attacking"){
+	   if(enemyCheckGround(i) == false && Enemies[i].jumpSpeed <= 0){
+	     if(Player.x < Enemies[i].x){
+		    Enemies[i].oldxDir = -1;
+	     } else{
+	        Enemies[i].oldxDir = 1;
+		 }
+	   }
+
+	   if(Enemies[i].jumpSpeed <= 0){   
+           enemyFall(i);
+       } else if(Enemies[i].jumpSpeed > 0){
+           enemyJump(i);
+       }
+
+	   if(enemyCheckGround(i) == false){
+	      enemyAttack(i);
+	   }
+	}
 }
 
 var enemyChangeState = function(i){
     
-    if(Enemies[i].isInRange == false){
+    if(Enemies[i].isInRange == false && Enemies[i].canAttackPlayer == false && Enemies[i].canPatrol == true){
        
         Enemies[i].currentState = "Patroling";
-        
-    } else if(Enemies[i].isInRange == true){
+    } 
+	if(Enemies[i].isInRange == true){
        
-        Enemies[i].currentState = "Following";
-        
-    }   
+        Enemies[i].currentState = "Following"; 
+    }  
+	if(Enemies[i].canAttackPlayer == true){
+	    Enemies[i].currentState = "Attacking";
+	}
 }
 
 var enemyCheckGround = function(i){
-    if(enemyPlaceFree(Enemies[i].x + 1, Enemies[i].y + Enemies[i].h,Enemies[i].w - 2, 3)){
+    if(enemyPlaceFree(Enemies[i].x - 1, Enemies[i].y + Enemies[i].h,Enemies[i].w + 2, 2)){
+	   Enemies[i].isJumping = false;
        return true;
     } else {
        return false;
     }
+}
+
+var enemyCheckRange = function(i){
+    var a = Player.x - Enemies[i].x;
+	var b = Player.y - Enemies[i].y;
+    var dist = sqrt((a * a) + (b * b));
+
+    if(dist > Enemies[i].viewRange){
+	   Enemies[i].isInRange = false;
+	   Enemies[i].canAttackPlayer = false;
+	}
+	if(dist <= Enemies[i].viewRange && dist > Enemies[i].attackRange){
+	   Enemies[i].isInRange = true;
+	   Enemies[i].canAttackPlayer = false;
+	}
+	if(dist <= Enemies[i].viewRange && dist <= Enemies[i].attackRange){
+	   Enemies[i].isInRange = false;
+	   Enemies[i].canAttackPlayer = true;
+	}
 }
 
 var enemyMove = function(i){
@@ -234,6 +282,7 @@ var enemyMove = function(i){
         if(placeFree(Enemies[i].x + s * Enemies[i].xDir, Enemies[i].y) == true && Enemies[i].delayed){
             Enemies[i].x += s * Enemies[i].xDir;
             Enemies[i].oldxDir = Enemies[i].xDir;
+            Enemies[i].moveMeter += s;
             break;
         }
     }    
@@ -251,39 +300,81 @@ var enemyDelay = function(i){
 }
 
 var enemyPatrol = function(i){
-    
-    if(Enemies[i].x == Enemies[i].x1 && Enemies[i].xDir == 0){
-       Enemies[i].right = 1;
-       Enemies[i].left = 0;
-       Enemies[i].delayed = false;       
-    } else if(Enemies[i].dontMoveleft){
-       Enemies[i].right = 1;
-       Enemies[i].left = 0;
-       Enemies[i].delayed = false;
-    } else if(Enemies[i].dontMoveright){
-       Enemies[i].right = 0;
-       Enemies[i].left = 1;
-       Enemies[i].delayed = false;
-    } else if(Enemies[i].x <= Enemies[i].x1 && Enemies[i].xDir == -1){
-       Enemies[i].right = 1;
-       Enemies[i].left = 0;
-       Enemies[i].delayed = false;
-    } else if(Enemies[i].x + Enemies[i].w >= Enemies[i].x2 && Enemies[i].xDir == 1){
-       Enemies[i].right = 0;
-       Enemies[i].left = 1;
-       Enemies[i].delayed = false;
-    }
+    if(Enemies[i].randomBetweenPoints == false){
+	   if(Enemies[i].x == Enemies[i].x1 && Enemies[i].xDir == 0){
+          Enemies[i].right = 1;
+          Enemies[i].left = 0;
+          Enemies[i].delayed = false;       
+       } else if(Enemies[i].dontMoveleft){
+          Enemies[i].right = 1;
+          Enemies[i].left = 0;
+          Enemies[i].delayed = false;
+       } else if(Enemies[i].dontMoveright){
+          Enemies[i].right = 0;
+          Enemies[i].left = 1;
+          Enemies[i].delayed = false;
+       } else if(Enemies[i].x <= Enemies[i].x1 && Enemies[i].xDir == -1){
+          Enemies[i].right = 1;
+          Enemies[i].left = 0;
+          Enemies[i].delayed = false;
+       } else if(Enemies[i].x + Enemies[i].w >= Enemies[i].x2 && Enemies[i].xDir == 1){
+          Enemies[i].right = 0;
+          Enemies[i].left = 1;
+          Enemies[i].delayed = false;
+       }
+	} else{
+	   if(Enemies[i].x == Enemies[i].x1 && Enemies[i].xDir == 0){
+          Enemies[i].right = 1;
+          Enemies[i].left = 0;
+          Enemies[i].delayed = false;
+	   }
+
+
+	   if(Enemies[i].x + Enemies[i].w >= Enemies[i].x2 && Enemies[i].xDir == 1){
+
+	      Enemies[i].right = 0;
+          Enemies[i].left = 1;
+          Enemies[i].delayed = false;
+
+		  Enemies[i].moveMeter = 0;
+		  Enemies[i].moveMeterLimit = abs(random(Enemies[i].x1, Enemies[i].x - Enemies[i].w)) - abs(Enemies[i].x);
+
+	   } else if(Enemies[i].x <= Enemies[i].x1 && Enemies[i].xDir == -1){
+
+          Enemies[i].right = 1;
+          Enemies[i].left = 0;
+          Enemies[i].delayed = false;   
+	   }
+	}
+}
+
+var enemyAttack = function(i){
+	var a = Player.x - Enemies[i].x;
+	var b = Player.y - Enemies[i].y;
+    var dist = sqrt((a * a) + (b * b));
+	
+	if(Enemies[i].readyToAttack){
+	   Projectiles.push(new enemyShot(Enemies[i].x + Enemies[i].w/2, Enemies[i].y + Enemies[i].h/2, a, b, dist, 255,0,0));
+	   Enemies[i].readyToAttack = false;
+	} else {
+	  if(Enemies[i].attackTimer < Enemies[i].attackDelayTimer){
+	    Enemies[i].attackTimer += 1;
+	  } else if(Enemies[i].attackTimer >= Enemies[i].attackDelayTimer){
+	    Enemies[i].readyToAttack = true;
+		Enemies[i].attackTimer = 0;
+	  }
+	}
 }
 
 var enemyFollowPlayer = function(i){
-
-    var tempObj = {x: 1,y: 1,w: 1,h: 1};
-
-    if(Enemies[i].x + Enemies[i].w < Player.x && collisionDetect(Player, tempObj) == false){
-       Enemies[i].xDir = 1;
-    } else if(Enemies.x > Player.x + Player.w){
-	   Enemies[i].xDir = -1;
-	}
+   if(Player.x + Player.w < Enemies[i].x - Enemies[i].w){
+      Enemies[i].left = 1;
+	  Enemies[i].right = 0;
+   }
+   if(Player.x > Enemies[i].x + Enemies[i].w){
+      Enemies[i].left = 0;
+	  Enemies[i].right = 1;
+   }
 }
 
 var enemyReadyingToJump = function(i){
@@ -306,7 +397,7 @@ var enemyFall = function(e){
     
     for (var i = 0; i < Enemies[e].g; i += 0.01){
         
-        if(enemyPlaceFree(Enemies[e].x, Enemies[e].y + Enemies[e].g - i, Enemies[e].w + 2, Enemies[e].h)){
+        if(enemyPlaceFree(Enemies[e].x, Enemies[e].y + Enemies[e].g - i, Enemies[e].w, Enemies[e].h)){
             
             Enemies[e].y += Enemies[e].g - i;
             break;
@@ -319,22 +410,22 @@ var enemyFall = function(e){
         }
     }
     
-    if(enemyCheckGround(e)){
-        
-        for (var s = Enemies[e].xSpeed; s > 0; s--){
-            
+	if(enemyCheckGround(e) && Enemies[e].isJumping){
+        for (var s = Enemies[e].xSpeed/2; s > 0; s--){      
             if(placeFree(Enemies[e].x + s * Enemies[e].xDir, Enemies[e].y) == true){
-                
                 Enemies[e].x += s * Enemies[e].xDir;
-                break;
-            
-            }
+                Enemies[e].moveMeter += s;
+			    break;
+		    }
         }
     }
 }
 
 var enemyJump = function(i){
-    for (var e = 0; e < (Enemies[i].jumpSpeed); e += 0.1){
+    
+	Enemies[i].isJumping = true;
+
+	for (var e = 0; e < (Enemies[i].jumpSpeed); e += 0.1){
         
         Enemies[i].g += Enemies[i].Gravity;
         
@@ -342,26 +433,25 @@ var enemyJump = function(i){
             
             Enemies[i].g = 0;
             Enemies[i].jumpSpeed = 0;
-        
         }
-        
-        if(enemyPlaceFree(Enemies[i].x, Enemies[i].y - (Enemies[i].jumpSpeed - (Enemies[i].g - e)))){
-            
+        if(enemyPlaceFree(Enemies[i].x, Enemies[i].y - 1 - (Enemies[i].jumpSpeed - (Enemies[i].g - e), Enemies[i].w, Enemies[i].h))){
             Enemies[i].y -= Enemies[i].jumpSpeed - Enemies[i].g - e;
-            break;
-        
-        }
+            break; 
+        } else{
+		    Enemies[i].jumpSpeed = 0;
+		}
     }
     
     Enemies[i].xDir = Enemies[i].oldxDir;
     
     if(enemyCheckGround(i) && Enemies[i].jumpSpeed > 0){
         
-        for (var s = Enemies[i].xSpeed; s > 0; s--){
+        for (var s = Enemies[i].xSpeed / 2; s > 0; s--){
             
-            if(placeFree(Enemies[i].x + s * Enemies[i].xDir, Enemies[i].y) == true){
+            if(enemyPlaceFree(Enemies[i].x + s * Enemies[i].xDir, Enemies[i].y) == true){
                 
                 Enemies[i].x += s * Enemies[i].xDir;
+				Enemies[i].moveMeter += s;
                 break;
             
             }
@@ -371,20 +461,18 @@ var enemyJump = function(i){
 
 var enemyJumpLeft = function(i){
     //fill(255);
-    //rect(Enemies[i].x - Enemies[i].w/2, Enemies[i].y - 1 - 25 * 3, 1.5 * Enemies[i].w, Enemies[i].h - 1);
+    //rect(Enemies[i].x - Enemies[i].w * 1.5, Enemies[i].y - 1 - 25 * 3, 2.5 * Enemies[i].w, Enemies[i].h - 1);
     //rect(Enemies[i].x - 5, Enemies[i].y, Enemies[i].w, Enemies[i].h - 4);
-        
-    if (enemyPlaceFree(Enemies[i].x - 2, Enemies[i].y, 2, Enemies[i].h - 4) == false && enemyPlaceFree(Enemies[i].x - Enemies[i].w/2, Enemies[i].y - 1 - 25 * 3, 2 * Enemies[i].w, Enemies[i].h - 1) == true && Enemies[i].xDir == -1){
-        Enemies[i].jumpSpeed = Enemies[i].jumpHeight;
+	if (enemyPlaceFree(Enemies[i].x - 2, Enemies[i].y, 2, Enemies[i].h - 4) == false && enemyPlaceFree(Enemies[i].x - Enemies[i].w/2, Enemies[i].y - 1 - 25 * 3, 2 * Enemies[i].w, Enemies[i].h - 1) == true && Enemies[i].xDir == -1){
+            Enemies[i].jumpSpeed = Enemies[i].jumpHeight;
     }
 }
 var enemyJumpRight = function(i){
     //fill(255);
     //rect(Enemies[i].x, Enemies[i].y - 1 - 25 * 3, 1.5 * Enemies[i].w, Enemies[i].h - 1);
     //rect(Enemies[i].x + Enemies[i].w, Enemies[i].y, 5, Enemies[i].h - 4);
-        
     if (enemyPlaceFree(Enemies[i].x + Enemies[i].w, Enemies[i].y, 5, Enemies[i].h - 4) == false && enemyPlaceFree(Enemies[i].x, Enemies[i].y - 1 - 25 * 3, 1.5 *  Enemies[i].w, Enemies[i].h - 1) == true && Enemies[i].xDir == 1){
-        Enemies[i].jumpSpeed = Enemies[i].jumpHeight;
+            Enemies[i].jumpSpeed = Enemies[i].jumpHeight;
     }
 }
 
@@ -458,9 +546,34 @@ var enemyPlaceFree = function(xNew,yNew,wNew,hNew){
 
 //Creating a variable "damagePlayer" as a function that will inflict damage on the "Player" if it colides with one of the "Enemies" by adding on the local varible of the "Player" called "newDamage".
 var damagePlayer = function(i){
-    if(collisionDetect(Player, Enemies[i]) && Enemies[i].AttackedByPlayer == false){
-       Player.newDamage = 1;
-       }
+
+    if(collisionDetect(Player, Projectiles[i]) && Projectiles[i].delayed){
+          Player.newDamage = 1;
+		  Projectiles[i].delayed = false;
+    }
+
+	for(var e = 0; e < Enemies.length; e++){
+	   if(collisionDetect(Enemies[e], Projectiles[i]) && Projectiles[i].delayed){
+	       Enemies[e].hp -= 1;
+		   Projectiles[i].delayed = false;
+		   Projectiles[i].done = true;
+	   } 	   
+	}
+
+	for(var r = 0; r < Display.Blocks.length; r++){
+	   if(collisionDetect(Display.Blocks[r], Projectiles[i])){
+	      Projectiles[i].delayed = false;
+		  Projectiles[i].done = true;
+	   }
+	}
+
+    if(Projectiles[i].delayed == false){
+	   if(Projectiles[i].delayTimer < Projectiles[i].delay){
+		  Projectiles[i].delayTimer += 1;
+	   } else if(Projectiles[i].delayTimer >= Projectiles[i].delay){
+		  Projectiles[i].delayed = true;
+	   }
+	}
 }
 
 //Creating a variable "seePlayer" as a function that will determin if the "Player" is within range of the individual "Enemies".
@@ -562,6 +675,16 @@ var playerFall = function(){
     }
 }
 
+var playerAttack = function(){
+   var a = mouseX - Player.x;
+   var b = mouseY - Player.y;
+   var dist = sqrt((a * a) + (b * b));
+
+   function mouseClicked(){
+   	   Projectiles.push(new enemyShot(Player.x + Player.w/2, Player.y + Player.h/2, a, b, dist, 0,255,0));
+   }
+}
+
 //Creating a variable "placeFree" as a function to determin if the "Player" can move to it's new position.
 var placeFree = function(xNew, yNew){
     //Creating a temporary rectangle that mimics the "Player".
@@ -593,18 +716,22 @@ var collisionDetect = function(r1, r2){
 }
 
 var RestartEnemies = function(i){
-    Enemies[i].x = Enemies[i].RestartX;
-    Enemies[i].y = Enemies[i].RestartY;
-    Enemies[i].isInRange = false;
+    Enemies.length = 0;
+	Projectiles.length = 0;
+	Projectiles.push(new enemyShot(-50, -50, 0, 0, 1 ,0,0,0));
+	spawnEnemies();
 }
 
 var RestartPlayer = function(){
     Player.x = Player.RestartX;
     Player.y = Player.RestartY;
-    
     Player.Damage = 0;
 }
 
-var updateFrameCount = function(){
-	frameCount += 1;
+var moveProjektiles = function(i){
+	Projectiles[i].x += Projectiles[i].moveX * Projectiles[i].speed;
+	Projectiles[i].y += Projectiles[i].moveY * Projectiles[i].speed;
+
+	fill(Projectiles[i].R, Projectiles[i].G, Projectiles[i].B);
+	rect(Projectiles[i].x, Projectiles[i].y, Projectiles[i].w, Projectiles[i].h);
 }

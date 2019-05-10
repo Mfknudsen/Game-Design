@@ -1,5 +1,5 @@
 //Creating a function called "ai" with input, x1, x2, y,w, h and fallOff ,giving when first called 
-function ai(x1, x2, y, w, h, fallOff, canJump){
+function ai(x1, x2, y, w, h, fallOff, canJump, canPatrol){
     //Creating local values.
     //Making sure that the x1 is the smallest of coordinates giving that are used to patrol between, x1 and x2.
     if(x1 < x2){
@@ -65,20 +65,30 @@ function ai(x1, x2, y, w, h, fallOff, canJump){
     //Turns true if the "Player" attacks.
     this.AttackedByPlayer = false;
     
-    this.jumpHeight = 6;
+    this.jumpHeight = 7;
     this.jumpSpeed = 0;
     this.g = 0;
     
     this.delayTimer = 0;
     this.delayed = true;
     
-    this.currentState = "Patroling";
+    this.currentState = "Following";
+	this.canPatrol = canPatrol;
 
 	this.readyToJump = 0;
 
-	this.updateDist = 1;
-
 	this.hp = 2;
+
+	this.isJumping = false;
+
+	this.canAttackPlayer == false;
+
+	this.readyToAttack = true;
+	this.attackTimer = 0;
+	this.attackDelayTimer = 50;
+
+	this.viewRange = 300;
+	this.attackRange = 200;
 
     //Creating a local function called "draw" and will contain the visual code.
     this.draw = function(){
@@ -121,4 +131,27 @@ function ai(x1, x2, y, w, h, fallOff, canJump){
         this.ySee = this.y + 1;
         this.hSee = this.h - 1;
     }
+}
+
+function enemyShot(xStart, yStart, x, y, dist, R,G,B){
+    this.speed = 5;
+
+	this.moveX = x/dist;
+	this.moveY = y/dist;
+
+	this.w = 10;
+	this.h = 10;
+
+	this.x = xStart;
+	this.y = yStart;
+
+	this.delayTimer = 0;
+	this.delay = 10;
+	this.delayed = false;
+
+	this.done = false;
+
+	this.R = R;
+	this.G = G;
+	this.B = B;
 }

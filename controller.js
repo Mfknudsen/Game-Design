@@ -24,7 +24,7 @@ function controller(x,y,w,h){
     this.isGrounded = false;
     this.Gravity = 0.2;
     this.jumpSpeed = 0;
-    this.jumpHeight = 6;
+    this.jumpHeight = 7;
     this.jumpNow = false;
     
     //Setting up values for the "life" function.
@@ -33,7 +33,7 @@ function controller(x,y,w,h){
     this.Damage = 0;
     this.newDamage = 0;
     this.Timer = 0;
-    this.timerEnd = 160;
+    this.timerEnd = 100;
     
     //Setting up a value for the eye.
     this.xHat = -10;
