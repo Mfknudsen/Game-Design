@@ -48,7 +48,9 @@ function draw(){
     updateAIDIRECTOR();
 
 	for (var i = 0; i < Enemies.length; i++){
-		  enemyUpdate(i);
+	   Enemies[i].isCurrent = true;
+	   enemyUpdate(i);
+	   Enemies[i].isCurrent = false;
 	}
 
 	playerUpdate();
@@ -125,6 +127,8 @@ function checkKeyDown(key){
     if(key.keyCode == "65"){Player.left = -1}
     if(key.keyCode == "68"){Player.right = 1}
     
+	if(key.keyCode == "17"){Player.jumpSpeed = 0;}
+
     if(key.keyCode == "32"){Player.jumpNow = true}
 }
 function checkKeyUp(key){
@@ -273,13 +277,16 @@ var enemyCheckRange = function(i){
 
 var enemyMove = function(i){
     Enemies[i].xDir = Enemies[i].right - Enemies[i].left;
+
+	tempObj = {x: Enemies[i].x + s * Enemies[i].xDir, y: Enemies[i].y, w: Enemies[i].w, h: Enemies[i].h}
+
     for (var s = Enemies[i].xSpeed; s > 0; s--){
-        if(placeFree(Enemies[i].x + s * Enemies[i].xDir, Enemies[i].y) == true && Enemies[i].delayed){
-            Enemies[i].x += s * Enemies[i].xDir;
-            Enemies[i].oldxDir = Enemies[i].xDir;
-            Enemies[i].moveMeter += s;
-            break;
-        }
+       if(placeFree(tempObj.x, tempObj.y) == true && Enemies[i].delayed && noEnemyInPath(tempObj)){
+           Enemies[i].x += s * Enemies[i].xDir;
+           Enemies[i].oldxDir = Enemies[i].xDir;
+           Enemies[i].moveMeter += s;
+           break;
+	   }
     }    
 }
 
@@ -698,7 +705,23 @@ var placeFree = function(xNew, yNew){
     }
 }
 
-//Creating a variable "collisionDeteect" as a function to determin if two rectangles colide with eachother and return a value of either true or false based on the result.
+var noEnemyInPath = function(tempObj){
+
+    for(var e = 0; e < Enemies.length; e++){
+	   if(collisionDetect(Enemies[e], tempObj) == true){
+		  if(Enemies[e].isCurrent == false){
+             return false;
+		  }
+       } else {
+          //If it doesnt hit one then it will return true.
+          if(e == Enemies.length - 1){
+             return true;
+		  }
+	   } 
+	}
+}
+
+//Creating a variable "collisionDetect" as a function to determin if two rectangles colide with eachother and return a value of either true or false based on the result.
 var collisionDetect = function(r1, r2){
   if (r1.x + r1.w > r2.x &&
       r1.x < r2.x + r2.w &&

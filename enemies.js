@@ -90,6 +90,8 @@ function ai(x1, x2, y, w, h, fallOff, canJump, canPatrol){
 	this.viewRange = 300;
 	this.attackRange = 200;
 
+	this.isCurrent = false;
+
     //Creating a local function called "draw" and will contain the visual code.
     this.draw = function(){
         
