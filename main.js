@@ -20,11 +20,6 @@ var Enemies = []
 var g = 0;
 var wh = 2;
 
-//Creating a timer for optimization in the "Enemies".
-var timerEnd = 5;
-
-var LastX;
-
 // ---- AI DIRECTOR VARIABLES---- \\
 var frameCount = 0;
 
