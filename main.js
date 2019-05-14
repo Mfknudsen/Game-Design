@@ -30,12 +30,12 @@ function setup(){
 
     //Settubg up the "Player" and "Display" as objects. "Player" will also be giving some values of x, y, w and h.
     Display = new display();
-    Player = new controller(250, 100, 35, 45);
+    Player = new controller(random(50, width - 50), 200, 35, 45);
     
     //Calling the functions that are needed to run ones at the start of the game.
     Display.Start();
     spawnEnemies();
-	Projectiles.push(new enemyShot(-50, -50, 0, 0, 1,0,0,0));
+	Projectiles.push(new enemyShot(-50, -50, 0, 0, 1,0,0,0,0));
 }
 
 //Creating the "draw" function that will be called every frame.
@@ -48,14 +48,17 @@ function draw(){
     updateAIDIRECTOR();
 
 	for (var i = 0; i < Enemies.length; i++){
-	   Enemies[i].isCurrent = true;
 	   enemyUpdate(i);
-	   Enemies[i].isCurrent = false;
 	}
 
 	playerUpdate();
 	
 	miscellaneousUpdate();
+
+	if(Enemies.length <= 0){
+	  RestartEnemies();
+	  RestartPlayer();
+	}
 }
 
 function updateMap(){
@@ -69,7 +72,8 @@ function updateAIDIRECTOR(){
 //Creating a function called "playerUpdate" that will contain all the function and some single code that make the "Player" work. 
 function playerUpdate(){
     if(Player.endHP == 0){
-        RestartPlayer();
+       RestartPlayer();
+	   Player.score = 0;
     }
     //Stating the direction of the "Player".
     Player.xDir = Player.left + Player.right;
@@ -81,7 +85,14 @@ function playerUpdate(){
     //Calling the function "movePlayer".
     movePlayer();
 
-	playerAttack();
+	if(Player.readyToAttack == false){
+	   if(Player.attackTimer < Player.attackDelay){
+	     Player.attackTimer += 1;
+	   } else{
+	   	 Player.readyToAttack = true;
+		 Player.attackTimer = 0;
+	   }
+	}
 }
 
 //Creating a function called "enemyUpdate" that will contain all the function and some single code that make the "Enemies" work. 
@@ -101,7 +112,8 @@ function enemyUpdate(i){
             seePlayer(i);
         }
     } else if(Enemies[i].hp <= 0){
-	    Enemies.splice(i,1);
+	   updateScoreValue(i);
+	   Enemies.splice(i,1);
 	}
 
 	if(Player.endHP == 0){
@@ -141,9 +153,10 @@ function checkKeyUp(key){
 //Creating a function called "spawnEnemies" that will contain all of the push functions used to create more of the "ai" objects.
 function spawnEnemies(){
     //The "ai" objects will be giving values of x1, x2, y, w, h, fallOff and canJump.
-    Enemies.push(new ai(100, 500, 150, 35, 45, false, true, false));
-    Enemies.push(new ai(450, 700, 150, 35, 45, false, true, false));
-    Enemies.push(new ai(150, 465, 150, 35, 45, false, true, false));
+    Enemies.push(new ai(random(50, width - 50), random(10, width - 10), 50, 35, 45, false, true, false));
+    Enemies.push(new ai(random(50, width - 50), random(10, width - 10), 50, 35, 45, false, true, false));
+    Enemies.push(new ai(random(50, width - 50), random(10, width - 10), 50, 35, 45, false, true, false));
+	Enemies.push(new ai(random(50, width - 50), random(10, width - 10), 50, 35, 45, false, true, false));
 }
 
 var enemyState = function(i){
@@ -235,15 +248,19 @@ var enemyState = function(i){
 var enemyChangeState = function(i){
     
     if(Enemies[i].isInRange == false && Enemies[i].canAttackPlayer == false && Enemies[i].canPatrol == true){
-       
-        Enemies[i].currentState = "Patroling";
+       Enemies[i].delayed = true;
+       Enemies[i].delayTimer = 0;
+       Enemies[i].currentState = "Patroling";
     } 
 	if(Enemies[i].isInRange == true){
-       
-        Enemies[i].currentState = "Following"; 
+       Enemies[i].delayed = true;
+       Enemies[i].delayTimer = 0;       
+       Enemies[i].currentState = "Following"; 
     }  
 	if(Enemies[i].canAttackPlayer == true){
-	    Enemies[i].currentState = "Attacking";
+       Enemies[i].delayed = true;
+       Enemies[i].delayTimer = 0;
+	   Enemies[i].currentState = "Attacking";
 	}
 }
 
@@ -277,11 +294,9 @@ var enemyCheckRange = function(i){
 
 var enemyMove = function(i){
     Enemies[i].xDir = Enemies[i].right - Enemies[i].left;
-
-	tempObj = {x: Enemies[i].x + s * Enemies[i].xDir, y: Enemies[i].y, w: Enemies[i].w, h: Enemies[i].h}
-
     for (var s = Enemies[i].xSpeed; s > 0; s--){
-       if(placeFree(tempObj.x, tempObj.y) == true && Enemies[i].delayed && noEnemyInPath(tempObj)){
+	tempObj = {x: Enemies[i].x + s * Enemies[i].xDir, y: Enemies[i].y, w: Enemies[i].w, h: Enemies[i].h}
+       if(placeFree(tempObj.x, tempObj.y) == true && Enemies[i].delayed){
            Enemies[i].x += s * Enemies[i].xDir;
            Enemies[i].oldxDir = Enemies[i].xDir;
            Enemies[i].moveMeter += s;
@@ -356,7 +371,7 @@ var enemyAttack = function(i){
     var dist = sqrt((a * a) + (b * b));
 	
 	if(Enemies[i].readyToAttack){
-	   Projectiles.push(new enemyShot(Enemies[i].x + Enemies[i].w/2, Enemies[i].y + Enemies[i].h/2, a, b, dist, 255,0,0));
+	   Projectiles.push(new enemyShot(Enemies[i].x + Enemies[i].w/2, Enemies[i].y + Enemies[i].h/2, a, b, dist, 255,0,0, 2));
 	   Enemies[i].readyToAttack = false;
 	} else {
 	  if(Enemies[i].attackTimer < Enemies[i].attackDelayTimer){
@@ -436,7 +451,7 @@ var enemyJump = function(i){
             Enemies[i].g = 0;
             Enemies[i].jumpSpeed = 0;
         }
-        if(enemyPlaceFree(Enemies[i].x, Enemies[i].y - 1 - (Enemies[i].jumpSpeed - (Enemies[i].g - e), Enemies[i].w, Enemies[i].h))){
+        if(enemyPlaceFree(Enemies[i].x, Enemies[i].y - (Enemies[i].jumpSpeed - (Enemies[i].g - e), Enemies[i].w, Enemies[i].h))){
             Enemies[i].y -= Enemies[i].jumpSpeed - Enemies[i].g - e;
             break; 
         } else{
@@ -450,7 +465,7 @@ var enemyJump = function(i){
         
         for (var s = Enemies[i].xSpeed / 2; s > 0; s--){
             
-            if(enemyPlaceFree(Enemies[i].x + s * Enemies[i].xDir, Enemies[i].y) == true){
+            if(enemyPlaceFree(Enemies[i].x + s * Enemies[i].xDir, Enemies[i].y, Enemies[i].w, Enemies[i].h) == true){
                 
                 Enemies[i].x += s * Enemies[i].xDir;
 				Enemies[i].moveMeter += s;
@@ -536,7 +551,7 @@ var enemyPlaceFree = function(xNew,yNew,wNew,hNew){
     var tempObj = {x: xNew, y: yNew, w: wNew, h: hNew};
     
     for (var i = 0; i < Display.Blocks.length; i++){
-        if(collisionDetect(tempObj, Display.Blocks[i]) == true){
+        if(collisionDetect(tempObj, Display.Blocks[i])){
             return false;
         } else {
             if(i == Display.Blocks.length - 1){
@@ -549,16 +564,20 @@ var enemyPlaceFree = function(xNew,yNew,wNew,hNew){
 //Creating a variable "damagePlayer" as a function that will inflict damage on the "Player" if it colides with one of the "Enemies" by adding on the local varible of the "Player" called "newDamage".
 var damagePlayer = function(i){
 
-    if(collisionDetect(Player, Projectiles[i]) && Projectiles[i].delayed){
+    if(collisionDetect(Player, Projectiles[i])){
+	   if(Player.team != Projectiles[i].team){
           Player.newDamage = 1;
 		  Projectiles[i].delayed = false;
+	   }
     }
 
 	for(var e = 0; e < Enemies.length; e++){
-	   if(collisionDetect(Enemies[e], Projectiles[i]) && Projectiles[i].delayed){
-	       Enemies[e].hp -= 1;
-		   Projectiles[i].delayed = false;
-		   Projectiles[i].done = true;
+	   if(collisionDetect(Enemies[e], Projectiles[i])){
+	      if(Enemies[e].team != Projectiles[i].team){
+	         Enemies[e].hp -= 1;
+		     Projectiles[i].delayed = false;
+		     Projectiles[i].done = true;
+		  }
 	   } 	   
 	}
 
@@ -566,14 +585,6 @@ var damagePlayer = function(i){
 	   if(collisionDetect(Display.Blocks[r], Projectiles[i])){
 	      Projectiles[i].delayed = false;
 		  Projectiles[i].done = true;
-	   }
-	}
-
-    if(Projectiles[i].delayed == false){
-	   if(Projectiles[i].delayTimer < Projectiles[i].delay){
-		  Projectiles[i].delayTimer += 1;
-	   } else if(Projectiles[i].delayTimer >= Projectiles[i].delay){
-		  Projectiles[i].delayed = true;
 	   }
 	}
 }
@@ -677,14 +688,14 @@ var playerFall = function(){
     }
 }
 
-var playerAttack = function(){
-   var a = mouseX - Player.x;
-   var b = mouseY - Player.y;
-   var dist = sqrt((a * a) + (b * b));
-
-   function mouseClicked(){
-   	   Projectiles.push(new enemyShot(Player.x + Player.w/2, Player.y + Player.h/2, a, b, dist, 0,255,0));
-   }
+function mouseClicked(PlayerAttack){
+  if(Player.readyToAttack == true){
+    var a = (mouseX) - (Player.x + Player.w/2);
+    var b = (mouseY) - (Player.y + Player.h/2);
+    var dist = sqrt((a * a) + (b * b));	  
+    Projectiles.push(new enemyShot(Player.x + Player.w/2, Player.y + Player.h/2, a, b, dist, 0,255,0, 1));
+	Player.readyToAttack = false;
+  }
 }
 
 //Creating a variable "placeFree" as a function to determin if the "Player" can move to it's new position.
@@ -705,11 +716,10 @@ var placeFree = function(xNew, yNew){
     }
 }
 
-var noEnemyInPath = function(tempObj){
-
+var noEnemyInPath = function(tempObj, i){
     for(var e = 0; e < Enemies.length; e++){
-	   if(collisionDetect(Enemies[e], tempObj) == true){
-		  if(Enemies[e].isCurrent == false){
+	   if(collisionDetect(tempObj, Enemies[e])){
+		  if(i != e){
              return false;
 		  }
        } else {
@@ -752,4 +762,8 @@ var moveProjektiles = function(i){
 
 	fill(Projectiles[i].R, Projectiles[i].G, Projectiles[i].B);
 	rect(Projectiles[i].x, Projectiles[i].y, Projectiles[i].w, Projectiles[i].h);
+}
+
+var updateScoreValue = function(i){
+   Player.score += 1;
 }

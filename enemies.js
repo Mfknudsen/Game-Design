@@ -87,10 +87,10 @@ function ai(x1, x2, y, w, h, fallOff, canJump, canPatrol){
 	this.attackTimer = 0;
 	this.attackDelayTimer = 50;
 
-	this.viewRange = 300;
-	this.attackRange = 200;
+	this.viewRange = 400;
+	this.attackRange = 300;
 
-	this.isCurrent = false;
+	this.team = 2;
 
     //Creating a local function called "draw" and will contain the visual code.
     this.draw = function(){
@@ -135,8 +135,8 @@ function ai(x1, x2, y, w, h, fallOff, canJump, canPatrol){
     }
 }
 
-function enemyShot(xStart, yStart, x, y, dist, R,G,B){
-    this.speed = 5;
+function enemyShot(xStart, yStart, x, y, dist, R,G,B, team){
+    this.speed = 7.5;
 
 	this.moveX = x/dist;
 	this.moveY = y/dist;
@@ -147,13 +147,11 @@ function enemyShot(xStart, yStart, x, y, dist, R,G,B){
 	this.x = xStart;
 	this.y = yStart;
 
-	this.delayTimer = 0;
-	this.delay = 10;
-	this.delayed = false;
-
 	this.done = false;
 
 	this.R = R;
 	this.G = G;
 	this.B = B;
+
+	this.team = team;
 }

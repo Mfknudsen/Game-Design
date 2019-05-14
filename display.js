@@ -47,12 +47,12 @@ function display(){
     for(var e = 0; e < (height/25); e++){
         this.Blocks.push(new block(-25, 0 + e * 25));
         this.Blocks.push(new block(width, 0 + e * 25));
-    }  
-	
-	for(var e = 0; e < 4; e++){
-        this.Blocks.push(new block(225 + e * 25, 400));
     }
+
+    this.Blocks.push(new block(225, 400));
 	
 	this.Blocks.push(new block(325, 425));
+
+	this.Blocks.push(new block(425, 375));
     }
 }

@@ -28,7 +28,7 @@ function controller(x,y,w,h){
     this.jumpNow = false;
     
     //Setting up values for the "life" function.
-    this.startHP = 5;
+    this.startHP = 3;
     this.endHP = this.startHP;
     this.Damage = 0;
     this.newDamage = 0;
@@ -38,7 +38,15 @@ function controller(x,y,w,h){
     //Setting up a value for the eye.
     this.xHat = -10;
     this.d = 1;
+
+	this.readyToAttack = true;
+	this.attackTimer = 0;
+	this.attackDelay = 20;
     
+	this.team = 1;
+	
+	this.score = 0;
+
     //Creating a local function called "show" that will contain the code for the visual of "controller".
     this.show = function(){
         //Setting some if statement to determin which way the "controller" is looking.
@@ -88,5 +96,10 @@ function controller(x,y,w,h){
            rect(60 + (30 * this.i), 10, 30,30); 
         }
         stroke(1);
+
+		fill(255);        
+		textSize(26);
+        text("Score: " + this.score, 10, 50,400,400);
+        textSize(15);
     }
 }
