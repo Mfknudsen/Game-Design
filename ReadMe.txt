@@ -2,7 +2,7 @@ Elev navn: Mads Teddy Francois Knudsen
 Programerings årseksame.
 
 Starte spillet:
- Udpak fÃ¸rst spillet fra .zip mappen og placer mappen "DarkLight" på dit skrive bor.
+ Udpak først spillet fra .zip mappen og placer mappen "DarkLight" på dit skrive bor.
  Gå ind i mappen efter og dobbeltklik på filen kaldet "index".
  Så vil du være igang med spillet.
 
